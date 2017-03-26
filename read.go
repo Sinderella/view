@@ -111,6 +111,8 @@ func updateContentNmap(par *ui.Par, parser Parser, file *os.File) {
 func updateContentRaw(par *ui.Par, file *os.File) {
 	reader := bufio.NewReader(file)
 	currentLoc := 0
+	selectLineCnt := currentSelectLine
+	lineNoCnt := currentSelectLine
 
 	for {
 		line, _, err := reader.ReadLine()
@@ -119,7 +121,14 @@ func updateContentRaw(par *ui.Par, file *os.File) {
 		}
 		lineStr := string(line)
 		currentLoc += len(lineStr)
-		par.Text += lineStr + "\n"
+		if selectLineCnt > 0 {
+			selectLineCnt--
+			continue
+		}
+
+		lineNoCnt++
+		lineNo := fmt.Sprintf("%3d|", lineNoCnt)
+		par.Text += lineNo + lineStr + "\n"
 
 	}
 }
