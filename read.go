@@ -15,9 +15,37 @@ func highlightLine(line string) string {
 		return output
 	} else if output, found = highlightKw(line, "(workgroup: ", ")"); found {
 		return output
-	} else if output, found = highlightKw(line, "| ssl-cert: Subject:", ""); found {
+	} else if output, found = highlightKw(line, "ssl-cert: Subject:", ""); found {
 		return output
-	} else if output, found = highlightKw(line, "| Subject Alternative Name: DNS:", ""); found {
+	} else if output, found = highlightKw(line, "Subject Alternative Name: DNS:", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "Host: ", ";"); found {
+		return output
+	} else if output, found = highlightKw(line, "bind.version: ", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "http-server-header: ", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "Issuer: ", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "Computer name: ", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "NetBIOS computer name: ", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "Domain name: ", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "Forest name: ", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "FQDN: ", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "Workgroup:", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "(RID:", ")"); found {
+		return output
+	} else if output, found = highlightKw(line, "Anonymous access: READ", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "Potentially risky methods: ", ""); found {
+		return output
+	} else if output, found = highlightKw(line, "ms-sql-info:", ""); found {
 		return output
 	}
 	//if strings.Contains(line, "(Domain: ") {
@@ -31,11 +59,11 @@ func highlightLine(line string) string {
 
 func highlightKw(line, kwStart, kwEnd string) (output string, found bool) {
 	if strings.Contains(line, kwStart) {
-		output = strings.Replace(line, kwStart, "["+kwStart, -1)
+		output = strings.Replace(line, kwStart, "["+kwStart, 1)
 		if kwEnd == "" {
 			output += "](bg-yellow)"
 		} else {
-			output = strings.Replace(output, kwEnd, kwEnd+"](bg-yellow)", -1)
+			output = strings.Replace(output, kwEnd, kwEnd+"](bg-yellow)", 1)
 		}
 		return output, true
 	}
@@ -57,6 +85,7 @@ func updateContentNmap(par *ui.Par, parser Parser, file *os.File) {
 	windowHeight := ui.TermHeight() - 2
 	lineCnt := 0
 	selectLineCnt := currentSelectLine
+	lineNoCnt := currentSelectLine
 
 	for {
 		line, _, err := reader.ReadLine()
@@ -71,7 +100,8 @@ func updateContentNmap(par *ui.Par, parser Parser, file *os.File) {
 				selectLineCnt--
 				continue
 			}
-			lineNo := fmt.Sprintf("%3d ", lineCnt+1)
+			lineNoCnt++
+			lineNo := fmt.Sprintf("%3d|", lineNoCnt)
 			par.Text += lineNo + highlightLine(lineStr) + "\n"
 			lineCnt++
 		}
