@@ -1,28 +1,33 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"path/filepath"
 
 	"github.com/rjeczalik/notify"
-    "os"
+	"os"
 )
 
-var F, _ = os.OpenFile("debug.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+var F, _ = os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 
 func main() {
 	done := make(chan struct{})
 	monitorCh := make(chan notify.EventInfo, 1)
 	notifyCh := make(chan notify.EventInfo, 1)
 
-    log.SetOutput(F)
+	if len(os.Args) <= 2 {
+		log.SetOutput(ioutil.Discard)
+	} else {
+		log.SetOutput(F)
+	}
 
 	watchingPath := os.Args[1]
 
 	if err := notify.Watch(filepath.Dir(watchingPath), monitorCh, notify.Create, notify.Remove); err != nil {
 		log.Fatal(err)
 	}
-    log.Println("Watching " + watchingPath)
+	log.Println("Watching " + watchingPath)
 	defer notify.Stop(monitorCh)
 
 	go CreateUI(done, notifyCh, watchingPath)
@@ -32,7 +37,7 @@ func main() {
 		case <-done:
 			return
 		case ei := <-monitorCh:
-            log.Println(ei)
+			log.Println(ei)
 			notifyCh <- ei
 		}
 	}
