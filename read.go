@@ -53,6 +53,7 @@ func updateContentNmap(par *ui.Par, parser Parser, file *os.File) {
 
   windowHeight := ui.TermHeight() - 2
   lineCnt := 0
+  selectLineCnt := currentSelectLine
 
   for {
     line, _, err := reader.ReadLine()
@@ -61,7 +62,12 @@ func updateContentNmap(par *ui.Par, parser Parser, file *os.File) {
     }
     lineStr := string(line)
     currentLoc += len(lineStr)
+
     if currentLoc >= contentLoc.Start && (contentLoc.End == -1 || currentLoc <= contentLoc.End) {
+      if selectLineCnt > 0 {
+        selectLineCnt--
+        continue
+      }
       par.Text += highlightLine(lineStr) + "\n"
       lineCnt++
     }

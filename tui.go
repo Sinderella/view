@@ -21,6 +21,10 @@ var (
   currentSelectIP = 0
   firstDisplayIP  = 0
   noOfIPs         = 0
+
+  currentSelectLine = 0
+  firstDisplayLine  = 0
+  noOfLines         = 0
 )
 
 func CreateUI(done chan<- struct{}, notifyCh <-chan notify.EventInfo, watchingPath string) {
@@ -77,7 +81,14 @@ func CreateUI(done chan<- struct{}, notifyCh <-chan notify.EventInfo, watchingPa
       if currentSelectIP < 0 {
         currentSelectIP = 0
       }
+      currentSelectLine = 0
       //updateIPList(iplst, displayLocCh, getCurrentFilePath(ls.Items, watchingPath))
+    case 2:
+      currentSelectLine--
+      log.Printf("curLine: %v, noOfLines: %v", currentSelectLine, noOfLines)
+      if currentSelectLine < 0 {
+        currentSelectLine = 0
+      }
     }
     selectedFilePath := updateFileList(watchingPath, changeFileCh, ls)
     log.Println("Selecting: " + selectedFilePath)
@@ -100,7 +111,14 @@ func CreateUI(done chan<- struct{}, notifyCh <-chan notify.EventInfo, watchingPa
       if currentSelectIP >= noOfIPs && noOfIPs != 0 {
         currentSelectIP = noOfIPs - 1
       }
+      currentSelectLine = 0
       //updateIPList(iplst, displayLocCh, getCurrentFilePath(ls.Items, watchingPath))
+    case 2:
+      currentSelectLine++
+      log.Printf("curLine: %v, noOfLines: %v", currentSelectLine, noOfLines)
+      if currentSelectLine >= noOfLines && noOfLines != 0 {
+        currentSelectLine = noOfLines - 1
+      }
     }
     selectedFilePath := updateFileList(watchingPath, changeFileCh, ls)
     log.Println("Selecting: " + selectedFilePath)
@@ -197,10 +215,10 @@ func updateIPList(par *ui.Par, displayLocCh chan<- Parser, filePath string) {
     }
 
     if idx == currentSelectIP {
-      if selectingColumn == 0 {
-        par.Text += fmt.Sprintf("[%s](bg-red)\n", ip)
-      } else {
+      if selectingColumn == 1 {
         par.Text += fmt.Sprintf("[%s](bg-green)\n", ip)
+      } else {
+        par.Text += fmt.Sprintf("[%s](bg-red)\n", ip)
       }
     } else {
       par.Text += ip + "\n"
