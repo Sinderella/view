@@ -72,7 +72,6 @@ func parseNmap(filePath string) (*Parser) {
       continue
     }
 
-    //log.Printf("ext: %v, last: %v", extractedIP[0], lastIP)
     if lastIP == "" {
       parser.Loc[extractedIP[0]] = &ContentLoc{currentLoc, -1}
     } else if lastIP != extractedIP[0] {
@@ -83,9 +82,6 @@ func parseNmap(filePath string) (*Parser) {
   }
 
   sort.Strings(parser.IPList)
-  for key, value := range parser.Loc {
-    log.Printf("%v: %v", key, value)
-  }
 
   return parser
 }

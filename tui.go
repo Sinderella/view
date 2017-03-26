@@ -11,13 +11,17 @@ import (
   "github.com/rjeczalik/notify"
 )
 
-var currentSelectFile = 0
-var firstDisplayFile = 0
-var noOfFiles = 0
+var (
+  selectingColumn = 0
 
-var currentSelectIP = 0
-var firstDisplayIP = 0
-var noOfIPs = 0
+  currentSelectFile = 0
+  firstDisplayFile  = 0
+  noOfFiles         = 0
+
+  currentSelectIP = 0
+  firstDisplayIP  = 0
+  noOfIPs         = 0
+)
 
 func CreateUI(done chan<- struct{}, notifyCh <-chan notify.EventInfo, watchingPath string) {
   err := ui.Init()
@@ -39,6 +43,70 @@ func CreateUI(done chan<- struct{}, notifyCh <-chan notify.EventInfo, watchingPa
       ui.NewCol(9, 0, contentArea),
     ),
   )
+
+  ui.Handle("/sys/kbd/<left>", func(e ui.Event) {
+    selectingColumn--
+    if selectingColumn < 0 {
+      selectingColumn = 0
+    }
+    selectedFilePath := updateFileList(watchingPath, changeFileCh, ls)
+    log.Println("Selecting: " + selectedFilePath)
+  })
+
+  ui.Handle("/sys/kbd/<right>", func(e ui.Event) {
+    selectingColumn++
+    if selectingColumn > 2 {
+      selectingColumn = 2
+    }
+    selectedFilePath := updateFileList(watchingPath, changeFileCh, ls)
+    log.Println("Selecting: " + selectedFilePath)
+  })
+
+  ui.Handle("/sys/kbd/<up>", func(e ui.Event) {
+    switch selectingColumn {
+    case 0:
+      currentSelectFile--
+      if currentSelectFile < 0 {
+        currentSelectFile = 0
+      }
+      currentSelectIP = 0
+      //selectedFilePath := updateFileList(watchingPath, changeFileCh, ls)
+      //log.Println("Selecting: " + selectedFilePath)
+    case 1:
+      currentSelectIP--
+      if currentSelectIP < 0 {
+        currentSelectIP = 0
+      }
+      //updateIPList(iplst, displayLocCh, getCurrentFilePath(ls.Items, watchingPath))
+    }
+    selectedFilePath := updateFileList(watchingPath, changeFileCh, ls)
+    log.Println("Selecting: " + selectedFilePath)
+    ui.Render(contentArea)
+  })
+
+  ui.Handle("/sys/kbd/<down>", func(e ui.Event) {
+    switch selectingColumn {
+    case 0:
+      currentSelectFile++
+      if currentSelectFile >= noOfFiles {
+        currentSelectFile = noOfFiles - 1
+      }
+      currentSelectIP = 0
+      //selectedFilePath := updateFileList(watchingPath, changeFileCh, ls)
+      //log.Println("Selecting: " + selectedFilePath)
+    case 1:
+      currentSelectIP++
+      log.Printf("curIP: %v, noOfIPs: %v", currentSelectIP, noOfIPs)
+      if currentSelectIP >= noOfIPs && noOfIPs != 0 {
+        currentSelectIP = noOfIPs - 1
+      }
+      //updateIPList(iplst, displayLocCh, getCurrentFilePath(ls.Items, watchingPath))
+    }
+    selectedFilePath := updateFileList(watchingPath, changeFileCh, ls)
+    log.Println("Selecting: " + selectedFilePath)
+    ui.Body.Align()
+    ui.Render(ui.Body)
+  })
 
   ui.Body.Align()
   ui.Render(ui.Body)
@@ -99,14 +167,6 @@ func createIPList(changeFileCh <-chan string) (par *ui.Par, displayLocCh chan Pa
   par.Width = 25
   par.Border = true
 
-  ui.Handle("/sys/kbd/j", func(e ui.Event) {
-    log.Println("Selecting: ")
-  })
-
-  ui.Handle("/sys/kbd/k", func(e ui.Event) {
-    log.Println("Selecting: ")
-  })
-
   go monitorUpdateIPList(changeFileCh, displayLocCh, par)
   return par, displayLocCh
 }
@@ -116,13 +176,35 @@ func updateIPList(par *ui.Par, displayLocCh chan<- Parser, filePath string) {
     return
   }
   parser := ParseFile(filePath)
-  log.Printf("updateIPList: %v", parser.FilePath)
+  noOfIPs = len(parser.IPList)
   displayLocCh <- *parser
 
   par.Text = ""
 
-  for _, ip := range parser.IPList {
-    par.Text += ip + "\n"
+  windowList := ui.TermHeight() - 2
+  for idx, ip := range parser.IPList {
+    if idx < firstDisplayIP {
+      continue
+    }
+    if firstDisplayIP+windowList == currentSelectIP {
+      firstDisplayIP = currentSelectIP - windowList + 1
+      continue
+    } else if currentSelectIP <= firstDisplayIP {
+      firstDisplayIP--
+      if firstDisplayIP < 0 {
+        firstDisplayIP = 0
+      }
+    }
+
+    if idx == currentSelectIP {
+      if selectingColumn == 0 {
+        par.Text += fmt.Sprintf("[%s](bg-red)\n", ip)
+      } else {
+        par.Text += fmt.Sprintf("[%s](bg-green)\n", ip)
+      }
+    } else {
+      par.Text += ip + "\n"
+    }
   }
 
   ui.Body.Align()
@@ -150,24 +232,6 @@ func createFileList(notifyCh <-chan notify.EventInfo, changeFileCh chan<- string
   ls.Y = 0
 
   updateFileList(watchingPath, changeFileCh, ls)
-
-  ui.Handle("/sys/kbd/<up>", func(e ui.Event) {
-    currentSelectFile--
-    if currentSelectFile < 0 {
-      currentSelectFile = 0
-    }
-    selectedFilePath := updateFileList(watchingPath, changeFileCh, ls)
-    log.Println("Selecting: " + selectedFilePath)
-  })
-
-  ui.Handle("/sys/kbd/<down>", func(e ui.Event) {
-    currentSelectFile++
-    if currentSelectFile >= noOfFiles {
-      currentSelectFile = noOfFiles - 1
-    }
-    selectedFilePath := updateFileList(watchingPath, changeFileCh, ls)
-    log.Println("Selecting: " + selectedFilePath)
-  })
 
   ui.Body.Align()
   ui.Render(ui.Body)
@@ -224,14 +288,18 @@ func updateFileList(watchingPath string, changeFileCh chan<- string, ls *ui.List
     if idx == currentSelectFile {
       selectedFilePath = path.Join(watchingPath, fileName)
       changeFileCh <- selectedFilePath
-      fileName = fmt.Sprintf("[%s](bg-green)", fileName)
+      if selectingColumn == 0 {
+        fileName = fmt.Sprintf("[%s](bg-green)", fileName)
+      } else {
+        fileName = fmt.Sprintf("[%s](bg-red)", fileName)
+      }
     }
     filesName = append(filesName, fileName)
   }
 
   ls.Items = filesName
-  ui.Body.Align()
-  ui.Render(ls)
+  //ui.Body.Align()
+  //ui.Render(ls)
 
   return selectedFilePath
 }
