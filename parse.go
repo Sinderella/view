@@ -7,7 +7,7 @@ import (
 	"path"
 	"regexp"
 	"sort"
-	"strings"
+  "strings"
 )
 
 type Parser struct {
@@ -42,7 +42,8 @@ func parseNmap(filePath string) *Parser {
 	}
 	defer file.Close()
 
-	re := regexp.MustCompile("Nmap scan report for ([0-9]{1,3}\\.){3}[0-9]{1,3}(\\/([0-9]|[1-2][0-9]|3[0-2]))?")
+	re := regexp.MustCompile("^Nmap scan report for (.*)")
+	// reip := regexp.MustCompile("([0-9]{1,3}\\.){3}[0-9]{1,3}(\\/([0-9]|[1-2][0-9]|3[0-2]))?")
 	reader := bufio.NewReader(file)
 	parser.FilePath = filePath
 	parser.Loc = make(map[string]*ContentLoc)
@@ -61,6 +62,8 @@ func parseNmap(filePath string) *Parser {
 		if len(extractedContent) == 0 {
 			continue
 		}
+    
+    log.Printf("%v", extractedContent[0])
 
 		for _, content := range extractedContent {
 			ip := strings.TrimPrefix(content, "Nmap scan report for ")

@@ -42,8 +42,8 @@ func CreateUI(done chan<- struct{}, notifyCh <-chan notify.EventInfo, watchingPa
 
   ui.Body.AddRows(
     ui.NewRow(
-      ui.NewCol(2, 0, ls),
-      ui.NewCol(1, 0, iplst),
+      ui.NewCol(1, 0, ls),
+      ui.NewCol(2, 0, iplst),
       ui.NewCol(9, 0, contentArea),
     ),
   )

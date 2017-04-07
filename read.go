@@ -61,9 +61,9 @@ func highlightKw(line, kwStart, kwEnd string) (output string, found bool) {
 	if strings.Contains(line, kwStart) {
 		output = strings.Replace(line, kwStart, "["+kwStart, 1)
 		if kwEnd == "" {
-			output += "](bg-yellow)"
+			output += "](fg-black,bg-yellow)"
 		} else {
-			output = strings.Replace(output, kwEnd, kwEnd+"](bg-yellow)", 1)
+			output = strings.Replace(output, kwEnd, kwEnd+"](fg-black,bg-yellow)", 1)
 		}
 		return output, true
 	}
